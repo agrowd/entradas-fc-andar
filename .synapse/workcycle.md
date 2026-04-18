@@ -14,3 +14,5 @@ Initialize the "Contador de venta de entradas de FC Andar" project and verify re
 - [2026-04-17 21:30] Received new requirements: Mobile focus, undo, confirmation, history editing, seller name, and detailed exports.
 - [2026-04-17 21:15] Completed v1.1.0 with advanced mobile features, undo, and enhanced reports.
 - [2026-04-17 21:20] Final verification passed in browser.
+- [2026-04-17 21:35] Code pushed to GitHub repository: https://github.com/agrowd/entradas-fc-andar.git
+- [2026-04-18 04:00] Fixed visual bug: Input overflow in config screen.
