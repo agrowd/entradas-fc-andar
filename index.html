@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contador FC Andar | Venta de Entradas</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Ionicons for beautiful icons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <!-- Export Libraries -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="dark-mode">
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <div class="logo-container">
+                <div class="badge">FC ANDAR</div>
+                <h1>Venta de Entradas</h1>
+            </div>
+            <button id="settings-btn" class="icon-btn" title="Configuración">
+                <ion-icon name="settings-outline"></ion-icon>
+            </button>
+        </header>
+
+        <!-- Main Counter Screen -->
+        <main id="counter-screen" class="screen hidden">
+            <div class="seller-badge" id="seller-display">Vendedor: ---</div>
+            
+            <div class="status-bar">
+                <div class="stat-item cash-stat">
+                    <span class="label">Efectivo</span>
+                    <span id="cash-total" class="value">$0</span>
+                </div>
+                <div class="stat-item transfer-stat">
+                    <span class="label">Transfer</span>
+                    <span id="transfer-total" class="value">$0</span>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="main-progress"></div>
+                <span id="progress-text">0 / 0</span>
+            </div>
+
+            <div class="counter-card main-card">
+                <span class="ticket-label">ENTRADA N°</span>
+                <div id="current-number" class="number-display">---</div>
+                <p class="price-tag">Precio: <span id="display-price">$0</span></p>
+            </div>
+
+            <div class="action-grid">
+                <button id="btn-cash" class="action-btn cash">
+                    <ion-icon name="cash-outline"></ion-icon>
+                    <span>Efectivo</span>
+                </button>
+                <button id="btn-transfer" class="action-btn transfer">
+                    <ion-icon name="swap-horizontal-outline"></ion-icon>
+                    <span>Transferencia</span>
+                </button>
+            </div>
+
+            <div class="undo-area">
+                <button id="btn-undo" class="undo-btn">
+                    <ion-icon name="arrow-undo-outline"></ion-icon>
+                    Deshacer última venta
+                </button>
+            </div>
+
+            <div class="nav-controls">
+                <button id="view-history-btn" class="secondary-btn">
+                    <ion-icon name="list-outline"></ion-icon>
+                    Historial
+                </button>
+                <button id="export-btn" class="secondary-btn">
+                    <ion-icon name="download-outline"></ion-icon>
+                    Exportar
+                </button>
+            </div>
+        </main>
+
+        <!-- Configuration Screen (Initial or Settings) -->
+        <div id="config-screen" class="screen">
+            <div class="config-card">
+                <h2>Configuración</h2>
+                <p class="subtitle">Personaliza la sesión de venta.</p>
+                
+                <div class="input-group">
+                    <label for="seller-name">Nombre del Vendedor</label>
+                    <input type="text" id="seller-name" placeholder="Ej: Federico">
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="start-range">Desde N°</label>
+                        <input type="number" id="start-range" placeholder="550">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="end-range">Hasta N°</label>
+                        <input type="number" id="end-range" placeholder="880">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="ticket-price">Precio por entrada ($)</label>
+                    <input type="number" id="ticket-price" placeholder="2000">
+                </div>
+
+                <div class="warning-box hidden" id="config-error">
+                    Por favor, completa todos los campos correctamente.
+                </div>
+
+                <button id="start-btn" class="primary-btn">Comenzar Venta</button>
+            </div>
+        </div>
+
+        <!-- History Modal/Screen -->
+        <div id="history-screen" class="screen hidden">
+            <div class="header-back">
+                <button id="close-history" class="icon-btn">
+                    <ion-icon name="chevron-back-outline"></ion-icon>
+                </button>
+                <h2>Historial de Ventas</h2>
+            </div>
+            
+            <div class="history-list-container">
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Monto</th>
+                            <th>Método</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body">
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="footer-actions">
+                <button id="reset-btn" class="danger-btn">
+                    <ion-icon name="trash-outline"></ion-icon>
+                    Reiniciar Todo
+                </button>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div id="export-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Exportar Reporte</h3>
+                <p>¿En qué formato deseas descargar el historial?</p>
+                <div class="export-options">
+                    <button id="export-excel" class="export-choice">
+                        <ion-icon name="stats-chart-outline" class="excel-color"></ion-icon>
+                        Excel (.xlsx)
+                    </button>
+                    <button id="export-pdf" class="export-choice">
+                        <ion-icon name="document-text-outline" class="pdf-color"></ion-icon>
+                        PDF (.pdf)
+                    </button>
+                </div>
+                <button id="cancel-export" class="text-btn">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Confirmation Overlay -->
+        <div id="confirm-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <div class="confirm-icon" id="confirm-icon-box">
+                    <ion-icon id="confirm-icon" name="help-outline"></ion-icon>
+                </div>
+                <h3>¿Confirmar Venta?</h3>
+                <p id="confirm-text">Venta en Efectivo por $0</p>
+                <div class="confirm-actions">
+                    <button id="confirm-yes" class="confirm-btn yes">Confirmar</button>
+                    <button id="confirm-no" class="confirm-btn no">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
