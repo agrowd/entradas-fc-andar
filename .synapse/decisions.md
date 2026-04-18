@@ -5,4 +5,4 @@
 | D-03 | **jsPDF & SheetJS** | LibrerÃ­as estÃ¡ndar y ligeras para exportaciÃ³n local sin necesidad de backend. | ðŸ”’ LOCKED |
 | D-04 | **Repositorio GitHub** | Se movió el código a GitHub para control de versiones y hosting. | 🔒 LOCKED |
 | D-05 | **Arquitectura Full-Stack** | Se añade un backend Node/Express para conexión segura con MongoDB Atlas. | 🔒 LOCKED |
-| D-06 | **MongoDB Atlas** | Almacenamiento persistente en la nube para historial multi-día y sesiones. | 🔒 LOCKED |
+| D-07 | Vercel Readiness | Prep para despliegue serverless con vercel.json. | ?? LOCKED |

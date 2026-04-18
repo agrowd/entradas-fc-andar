@@ -152,3 +152,5 @@ app.delete('/api/sessions/:id', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
+
+module.exports = app;
