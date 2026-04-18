@@ -8,3 +8,8 @@
 **Root Cause:** (1) Conflicto de rutas en Vercel y (2) app.listen() ejecutándose en entorno serverless.
 **Solución:** Se agregó rewrite en vercel.json y se envolvió app.listen() en un check modular.
 **Estado:** ? FIXED (Pending env var check)
+## ERR-03: Cannot read properties of undefined (reading 'filter') (2026-04-18)
+**Síntoma:** El contador crashea al cargar o iniciar sesión.
+**Root Cause:** updateUI() intentaba filtrar state.session.sales que era undefined (pasaba cuando el servidor devolvía {error: ...} en lugar de la sesión).
+**Solución:** Se agregó validación de respuesta en startSelling() y valor por defecto [] en updateUI() y en el Schema de Mongoose.
+**Estado:** ? FIXED

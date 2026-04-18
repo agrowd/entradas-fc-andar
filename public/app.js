@@ -124,8 +124,13 @@ async function startSelling() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        state.session = await res.json();
+        const data = await res.json();
         
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        state.session = data;
         configError.classList.add('hidden');
         updateUI();
         showScreen(counterScreen);
@@ -200,18 +205,19 @@ async function handleUndo() {
 function updateUI() {
     if (!state.session) return;
 
+    const sales = state.session.sales || [];
     currentNumDisplay.textContent = state.session.currentNum > state.session.endNum ? "FIN" : state.session.currentNum;
     displayPrice.textContent = `$${state.session.price}`;
     
     // Stats Breakdown
-    const cashTotal = state.session.sales.filter(s => s.method === 'Efectivo').reduce((sum, s) => sum + s.amount, 0);
-    const transferTotal = state.session.sales.filter(s => s.method === 'Transferencia').reduce((sum, s) => sum + s.amount, 0);
+    const cashTotal = sales.filter(s => s && s.method === 'Efectivo').reduce((sum, s) => sum + s.amount, 0);
+    const transferTotal = sales.filter(s => s && s.method === 'Transferencia').reduce((sum, s) => sum + s.amount, 0);
     
     cashTotalDisplay.textContent = `$${cashTotal.toLocaleString()}`;
     transferTotalDisplay.textContent = `$${transferTotal.toLocaleString()}`;
     
     // Progress
-    const count = state.session.sales.length;
+    const count = sales.length;
     const totalPossible = (state.session.endNum - state.session.startNum) + 1;
     progressText.textContent = `${count} / ${totalPossible}`;
     

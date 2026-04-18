@@ -26,12 +26,15 @@ const SessionSchema = new mongoose.Schema({
     endNum: Number,
     price: Number,
     currentNum: Number,
-    sales: [{
-        number: Number,
-        method: String,
-        amount: Number,
-        timestamp: String
-    }],
+    sales: {
+        type: [{
+            number: Number,
+            method: String,
+            amount: Number,
+            timestamp: String
+        }],
+        default: []
+    },
     isCompleted: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     completedAt: Date

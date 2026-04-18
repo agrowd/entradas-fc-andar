@@ -18,3 +18,4 @@ Initialize the "Contador de venta de entradas de FC Andar" project and verify re
 - [2026-04-18 04:00] Fixed visual bug: Input overflow in config screen.
 - [2026-04-18 04:15] Completed v2.0.0 Full-Stack integration with MongoDB Atlas.
 - [2026-04-18 05:10] Fixed serverless compatibility in api/server.js and refined vercel.json rewrites.
+- [2026-04-18 05:15] Fixed frontend crash in updateUI (null pointer on filter).
