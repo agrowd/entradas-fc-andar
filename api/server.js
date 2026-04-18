@@ -14,19 +14,40 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// MongoDB Connection
-if (!process.env.MONGODB_URI) {
-    console.error('❌ MONGODB_URI no está definida en las variables de entorno');
-} else {
-    mongoose.connect(process.env.MONGODB_URI, {
-        serverSelectionTimeoutMS: 5000 // Error rápido si no conecta
-    })
-    .then(() => console.log('✅ Conectado a MongoDB Atlas'))
-    .catch(err => console.error('❌ Error de conexión a MongoDB:', err));
+// MongoDB Connection Management
+let cachedDb = null;
+
+async function connectToDatabase() {
+    if (cachedDb) return cachedDb;
+
+    if (!process.env.MONGODB_URI) {
+        throw new Error('MONGODB_URI no definida');
+    }
+
+    // Si ya hay una conexión pendiente, la esperamos
+    if (mongoose.connection.readyState === 1) return mongoose.connection;
+
+    cachedDb = await mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+        bufferCommands: false
+    });
+    
+    return cachedDb;
 }
 
-// Global Mongoose Config
-mongoose.set('bufferCommands', false); // Deshabilitar buffering para fallar rápido
+// Global Middleware to ensure DB connection
+app.use(async (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        try {
+            await connectToDatabase();
+            next();
+        } catch (err) {
+            res.status(500).json({ error: 'Error de conexión a la base de datos: ' + err.message });
+        }
+    } else {
+        next();
+    }
+});
 
 // Models
 const SessionSchema = new mongoose.Schema({

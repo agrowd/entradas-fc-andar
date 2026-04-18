@@ -20,3 +20,4 @@ Initialize the "Contador de venta de entradas de FC Andar" project and verify re
 - [2026-04-18 05:10] Fixed serverless compatibility in api/server.js and refined vercel.json rewrites.
 - [2026-04-18 05:15] Fixed frontend crash in updateUI (null pointer on filter).
 - [2026-04-18 05:22] Improved DB connection stability (set bufferCommands: false and serverSelectionTimeoutMS).
+- [2026-04-18 05:33] Implemented connectToDatabase middleware for serverless stability (await connection before handlers).
