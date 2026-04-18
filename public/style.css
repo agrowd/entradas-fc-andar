@@ -382,8 +382,10 @@ h2 {
 .main-footer {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 24px;
+    gap: 12px;
+    margin-top: 80px;
+    border-top: 1px solid var(--border);
+    padding-top: 30px;
 }
 
 .danger-btn {

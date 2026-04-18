@@ -1,8 +1,10 @@
-| ID | DecisiÃ³n TÃ©cnica | La RazÃ³n (The Why) | Estado |
+| ID | Decision Técnica | La Razón (The Why) | Estado |
 |:---|:---|:---|:---|
-| D-01 | **Vainilla HTML/CSS/JS** | MÃ¡xima velocidad de carga y portabilidad sin dependencias pesadas para una utilidad de campo. | ðŸ”’ LOCKED |
-| D-02 | **LocalStorage Persistence** | Permite que si el navegador se cierra o refresca, el progreso del conteo no se pierda. | ðŸ”’ LOCKED |
-| D-03 | **jsPDF & SheetJS** | LibrerÃ­as estÃ¡ndar y ligeras para exportaciÃ³n local sin necesidad de backend. | ðŸ”’ LOCKED |
-| D-04 | **Repositorio GitHub** | Se movió el código a GitHub para control de versiones y hosting. | 🔒 LOCKED |
-| D-05 | **Arquitectura Full-Stack** | Se añade un backend Node/Express para conexión segura con MongoDB Atlas. | 🔒 LOCKED |
-| D-07 | Vercel Readiness | Prep para despliegue serverless con vercel.json. | ?? LOCKED |
+| D-01 | **Vainilla HTML/CSS/JS** | Máxima velocidad de carga y portabilidad. | 🔒 LOCKED |
+| D-02 | **LocalStorage Persistence** | Permite que si el navegador se refresca, el progreso no se pierda. | 🔒 LOCKED |
+| D-03 | **jsPDF & SheetJS** | Librerías estándar para exportación local. | 🔒 LOCKED |
+| D-04 | **Repositorio GitHub** | Se movió el código a GitHub. | 🔒 LOCKED |
+| D-05 | **Arquitectura Full-Stack** | Se añade un backend Node/Express para MongoDB Atlas. | 🔒 LOCKED |
+| D-06 | **MongoDB Atlas** | Almacenamiento persistente en la nube. | 🔒 LOCKED |
+| D-07 | **Vercel Readiness** | Prep para despliegue serverless con vercel.json. | 🔒 LOCKED |
+| D-08 | **Reorganización /public** | Estructura para compatibilidad estándar con Vercel. | 🔒 LOCKED |

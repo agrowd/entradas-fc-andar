@@ -292,19 +292,27 @@ window.toggleMethod = async function(index) {
 }
 
 async function handleFinishDay() {
-    if (!state.session) return;
+    if (!state.session) {
+        alert("No hay una sesión activa para finalizar.");
+        return;
+    }
     
     const count = state.session.sales.length;
     if (confirm(`¿Estás seguro de terminar el día? Se han registrado ${count} ventas. Esta acción archivará la sesión actual.`)) {
         try {
-            await fetch(`${API_URL}/sessions/finish`, {
+            console.log('Finalizando sesión:', state.session._id);
+            const res = await fetch(`${API_URL}/sessions/finish`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId: state.session._id })
             });
+
+            if (!res.ok) throw new Error('Error en el servidor al cerrar sesión');
+
             state.session = null;
             showScreen(configScreen);
         } catch (err) {
+            console.error('Error terminando día:', err);
             alert('Error al terminar día: ' + err.message);
         }
     }
