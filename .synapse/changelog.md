@@ -25,3 +25,16 @@
 ### ?? UI Improvements
 - Optimized touch targets for mobile.
 - Refined glassmorphism and animations.
+## 2.0.0 (2026-04-18) - MongoDB Atlas Integration (Full-Stack)
+### ? Core Features
+- **Persistent Cloud Storage:** Integration with MongoDB Atlas for session and sales data.
+- **Session Management:** "Finish Day" button to archive the current session and start a new one.
+- **Historical Days View:** Browse previous sessions with totals (Cash/Transfer/Grand Total).
+- **History Management:** Delete historical sessions or edit specific sales within the active session.
+- **Real-time Sync:** Data is saved to the cloud on every action, ensuring no data loss across devices.
+
+### ?? Tech Stack Update
+- **Backend:** Node.js/Express server.
+- **Database:** MongoDB Atlas (Mongoose).
+- **Security:** Environment variables (.env) for database credentials.
+- **Convenience:** added 'iniciar.bat' for local startup.

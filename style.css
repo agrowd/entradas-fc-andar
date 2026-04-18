@@ -176,6 +176,100 @@ h2 {
     text-align: center;
 }
 
+.text-center { text-align: center; }
+
+/* History & Sessions */
+.sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 30px;
+}
+
+.session-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    box-shadow: var(--shadow);
+}
+
+.session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.session-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.session-seller {
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: block;
+}
+
+.session-stats {
+    display: flex;
+    gap: 20px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+
+.session-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.session-stat .label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.session-stat .value {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.session-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.session-delete-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.session-download-btn {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--secondary);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
 .stat-item .label {
     display: block;
     font-size: 0.7rem;
@@ -192,7 +286,7 @@ h2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
 .action-btn {
@@ -279,6 +373,17 @@ h2 {
     color: white;
     font-size: 1.1rem;
     margin-top: 10px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.main-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 24px;
 }
 
 .danger-btn {

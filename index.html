@@ -77,11 +77,22 @@
             <div class="nav-controls">
                 <button id="view-history-btn" class="secondary-btn">
                     <ion-icon name="list-outline"></ion-icon>
-                    Historial
+                    Ventas
                 </button>
-                <button id="export-btn" class="secondary-btn">
+                <button id="view-days-btn" class="secondary-btn">
+                    <ion-icon name="calendar-outline"></ion-icon>
+                    Histórico
+                </button>
+            </div>
+            
+            <div class="footer-actions main-footer">
+                <button id="finish-day-btn" class="danger-btn full-width">
+                    <ion-icon name="checkmark-done-circle-outline"></ion-icon>
+                    Terminar Día
+                </button>
+                <button id="export-btn" class="text-btn">
                     <ion-icon name="download-outline"></ion-icon>
-                    Exportar
+                    Exportar Sesión Local
                 </button>
             </div>
         </main>
@@ -128,7 +139,7 @@
                 <button id="close-history" class="icon-btn">
                     <ion-icon name="chevron-back-outline"></ion-icon>
                 </button>
-                <h2>Historial de Ventas</h2>
+                <h2>Ventas del Día</h2>
             </div>
             
             <div class="history-list-container">
@@ -147,12 +158,23 @@
                 </table>
             </div>
             
-            <div class="footer-actions">
-                <button id="reset-btn" class="danger-btn">
-                    <ion-icon name="trash-outline"></ion-icon>
-                    Reiniciar Todo
+            <p id="empty-history" class="subtitle text-center hidden">No hay ventas registradas hoy.</p>
+        </div>
+
+        <!-- Past Sessions Screen -->
+        <div id="days-screen" class="screen hidden">
+            <div class="header-back">
+                <button id="close-days" class="icon-btn">
+                    <ion-icon name="chevron-back-outline"></ion-icon>
                 </button>
+                <h2>Historial de Días</h2>
             </div>
+            
+            <div id="sessions-list" class="sessions-list">
+                <!-- Session cards injected by JS -->
+            </div>
+            
+            <p id="empty-sessions" class="subtitle text-center hidden">No hay días guardados todavía.</p>
         </div>
 
         <!-- Export Modal -->

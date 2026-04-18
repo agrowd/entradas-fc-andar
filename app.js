@@ -1,14 +1,6 @@
 // State Management
 let state = {
-    config: {
-        start: 0,
-        end: 0,
-        price: 0,
-        seller: ''
-    },
-    currentNum: 0,
-    sales: [], 
-    isActive: false
+    session: null // Will hold the session object from MongoDB
 };
 
 // Pending Sale for Confirmation
@@ -18,6 +10,7 @@ let pendingSale = null;
 const configScreen = document.getElementById('config-screen');
 const counterScreen = document.getElementById('counter-screen');
 const historyScreen = document.getElementById('history-screen');
+const daysScreen = document.getElementById('days-screen');
 const exportModal = document.getElementById('export-modal');
 const confirmOverlay = document.getElementById('confirm-overlay');
 
@@ -35,23 +28,33 @@ const progressText = document.getElementById('progress-text');
 const mainProgressBar = document.getElementById('main-progress');
 const sellerDisplay = document.getElementById('seller-display');
 const historyBody = document.getElementById('history-body');
+const sessionsList = document.getElementById('sessions-list');
+
+// API Base URL (Assuming same host)
+const API_URL = '/api';
 
 // Initialization
-document.addEventListener('DOMContentLoaded', () => {
-    loadState();
+document.addEventListener('DOMContentLoaded', async () => {
+    await syncWithServer();
     initEventListeners();
-    updateUI();
 });
 
-function loadState() {
-    const savedState = localStorage.getItem('fc_andar_state_v2');
-    if (savedState) {
-        state = JSON.parse(savedState);
+async function syncWithServer() {
+    try {
+        const res = await fetch(`${API_URL}/sessions/current`);
+        const session = await res.json();
+        
+        if (session && !session.error) {
+            state.session = session;
+            showScreen(counterScreen);
+            updateUI();
+        } else {
+            state.session = null;
+            showScreen(configScreen);
+        }
+    } catch (err) {
+        console.error('Error sincronizando con el servidor:', err);
     }
-}
-
-function saveState() {
-    localStorage.setItem('fc_andar_state_v2', JSON.stringify(state));
 }
 
 function initEventListeners() {
@@ -79,6 +82,9 @@ function initEventListeners() {
         showScreen(historyScreen);
     });
     document.getElementById('close-history').addEventListener('click', () => showScreen(counterScreen));
+    
+    document.getElementById('view-days-btn').addEventListener('click', viewPastSessions);
+    document.getElementById('close-days').addEventListener('click', () => showScreen(counterScreen));
 
     // Export
     document.getElementById('export-btn').addEventListener('click', () => exportModal.classList.remove('hidden'));
@@ -86,53 +92,59 @@ function initEventListeners() {
     document.getElementById('export-excel').addEventListener('click', exportToExcel);
     document.getElementById('export-pdf').addEventListener('click', exportToPDF);
 
-    // Reset
-    document.getElementById('reset-btn').addEventListener('click', handleReset);
+    // Finish Day
+    document.getElementById('finish-day-btn').addEventListener('click', handleFinishDay);
 }
 
 function populateConfigInputs() {
-    sellerNameInput.value = state.config.seller || '';
-    startRangeInput.value = state.config.start || '';
-    endRangeInput.value = state.config.end || '';
-    priceInput.value = state.config.price || '';
+    if (state.session) {
+        sellerNameInput.value = state.session.sellerName;
+        startRangeInput.value = state.session.startNum;
+        endRangeInput.value = state.session.endNum;
+        priceInput.value = state.session.price;
+    }
 }
 
-function startSelling() {
-    const seller = sellerNameInput.value.trim();
-    const start = parseInt(startRangeInput.value);
-    const end = parseInt(endRangeInput.value);
+async function startSelling() {
+    const sellerName = sellerNameInput.value.trim();
+    const startNum = parseInt(startRangeInput.value);
+    const endNum = parseInt(endRangeInput.value);
     const price = parseFloat(priceInput.value);
 
-    if (!seller || isNaN(start) || isNaN(end) || isNaN(price) || start > end) {
+    if (!sellerName || isNaN(startNum) || isNaN(endNum) || isNaN(price) || startNum > endNum) {
         configError.classList.remove('hidden');
         return;
     }
 
-    // Only reset if it's a new session or range changed significantly
-    if (!state.isActive || state.config.start !== start || state.config.end !== end) {
-        state.sales = [];
-        state.currentNum = start;
-    }
+    const payload = { sellerName, startNum, endNum, price, currentNum: startNum, sales: [] };
 
-    state.config = { seller, start, end, price };
-    state.isActive = true;
-    
-    configError.classList.add('hidden');
-    saveState();
-    updateUI();
-    showScreen(counterScreen);
+    try {
+        const res = await fetch(`${API_URL}/sessions/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        state.session = await res.json();
+        
+        configError.classList.add('hidden');
+        updateUI();
+        showScreen(counterScreen);
+    } catch (err) {
+        alert('Error al iniciar sesión: ' + err.message);
+    }
 }
 
 function prepareSale(method) {
-    if (state.currentNum > state.config.end) {
+    if (!state.session) return;
+    if (state.session.currentNum > state.session.endNum) {
         alert("¡Rango finalizado!");
         return;
     }
 
     pendingSale = {
-        number: state.currentNum,
+        number: state.session.currentNum,
         method: method,
-        amount: state.config.price,
+        amount: state.session.price,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -143,197 +155,326 @@ function prepareSale(method) {
 
     iconBox.className = `confirm-icon ${method === 'Efectivo' ? 'cash' : 'transfer'}`;
     icon.name = method === 'Efectivo' ? 'cash-outline' : 'swap-horizontal-outline';
-    text.textContent = `Venta en ${method} por $${state.config.price}`;
+    text.textContent = `Venta en ${method} por $${state.session.price}`;
 
     confirmOverlay.classList.remove('hidden');
 }
 
-function confirmSale() {
-    if (!pendingSale) return;
+async function confirmSale() {
+    if (!pendingSale || !state.session) return;
 
-    state.sales.push(pendingSale);
-    state.currentNum++;
-    
-    confirmOverlay.classList.add('hidden');
-    pendingSale = null;
-    
-    saveState();
-    updateUI();
+    try {
+        const res = await fetch(`${API_URL}/sessions/sale`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: state.session._id, sale: pendingSale })
+        });
+        state.session = await res.json();
+        
+        confirmOverlay.classList.add('hidden');
+        pendingSale = null;
+        updateUI();
+    } catch (err) {
+        alert('Error al registrar venta: ' + err.message);
+    }
 }
 
-function handleUndo() {
-    if (state.sales.length === 0) return;
+async function handleUndo() {
+    if (!state.session || state.session.sales.length === 0) return;
     
     if (confirm("¿Deshacer la última venta registrada?")) {
-        const lastSale = state.sales.pop();
-        state.currentNum = lastSale.number; // Return to the number of the undone sale
-        saveState();
-        updateUI();
+        try {
+            const res = await fetch(`${API_URL}/sessions/undo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: state.session._id })
+            });
+            state.session = await res.json();
+            updateUI();
+        } catch (err) {
+            alert('Error al deshacer: ' + err.message);
+        }
     }
 }
 
 function updateUI() {
-    if (!state.isActive) {
-        showScreen(configScreen);
-        return;
-    }
+    if (!state.session) return;
 
-    showScreen(counterScreen);
-    currentNumDisplay.textContent = state.currentNum > state.config.end ? "FIN" : state.currentNum;
-    displayPrice.textContent = `$${state.config.price}`;
+    currentNumDisplay.textContent = state.session.currentNum > state.session.endNum ? "FIN" : state.session.currentNum;
+    displayPrice.textContent = `$${state.session.price}`;
     
     // Stats Breakdown
-    const cashTotal = state.sales.filter(s => s.method === 'Efectivo').reduce((sum, s) => sum + s.amount, 0);
-    const transferTotal = state.sales.filter(s => s.method === 'Transferencia').reduce((sum, s) => sum + s.amount, 0);
+    const cashTotal = state.session.sales.filter(s => s.method === 'Efectivo').reduce((sum, s) => sum + s.amount, 0);
+    const transferTotal = state.session.sales.filter(s => s.method === 'Transferencia').reduce((sum, s) => sum + s.amount, 0);
     
     cashTotalDisplay.textContent = `$${cashTotal.toLocaleString()}`;
     transferTotalDisplay.textContent = `$${transferTotal.toLocaleString()}`;
     
     // Progress
-    const count = state.sales.length;
-    const totalPossible = (state.config.end - state.config.start) + 1;
+    const count = state.session.sales.length;
+    const totalPossible = (state.session.endNum - state.session.startNum) + 1;
     progressText.textContent = `${count} / ${totalPossible}`;
     
     const progressPercent = (count / totalPossible) * 100;
     mainProgressBar.style.width = `${Math.min(progressPercent, 100)}%`;
 
     // Seller Display
-    sellerDisplay.textContent = `Vendedor: ${state.config.seller}`;
+    sellerDisplay.textContent = `Vendedor: ${state.session.sellerName}`;
 }
 
 function showScreen(screen) {
-    [configScreen, counterScreen, historyScreen].forEach(s => s.classList.add('hidden'));
+    [configScreen, counterScreen, historyScreen, daysScreen].forEach(s => s.classList.add('hidden'));
     screen.classList.remove('hidden');
 }
 
 function renderHistory() {
+    if (!state.session) return;
+    
     historyBody.innerHTML = '';
-    [...state.sales].reverse().forEach((sale, index) => {
-        const originalIndex = state.sales.length - 1 - index;
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${sale.number}</td>
-            <td>$${sale.amount}</td>
-            <td class="${sale.method.toLowerCase()}">${sale.method}</td>
-            <td>
-                <button class="change-method-btn" onclick="toggleMethod(${originalIndex})" title="Cambiar Método">
-                    <ion-icon name="sync-outline"></ion-icon>
-                </button>
-                <button class="delete-row-btn" onclick="deleteSale(${originalIndex})" title="Eliminar">
-                    <ion-icon name="trash-outline"></ion-icon>
-                </button>
-            </td>
-        `;
-        historyBody.appendChild(row);
-    });
+    const emptyMsg = document.getElementById('empty-history');
+    
+    if (state.session.sales.length === 0) {
+        emptyMsg.classList.remove('hidden');
+    } else {
+        emptyMsg.classList.add('hidden');
+        [...state.session.sales].reverse().forEach((sale, index) => {
+            const originalIndex = state.session.sales.length - 1 - index;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${sale.number}</td>
+                <td>$${sale.amount}</td>
+                <td class="${sale.method.toLowerCase()}">${sale.method}</td>
+                <td>
+                    <button class="change-method-btn" onclick="toggleMethod(${originalIndex})" title="Cambiar Método">
+                        <ion-icon name="sync-outline"></ion-icon>
+                    </button>
+                    <button class="delete-row-btn" onclick="deleteSale(${originalIndex})" title="Eliminar">
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                </td>
+            `;
+            historyBody.appendChild(row);
+        });
+    }
 }
 
 // History Actions (Global scope for onclick)
-window.deleteSale = function(index) {
+window.deleteSale = async function(index) {
     if (confirm("¿Eliminar esta venta?")) {
-        state.sales.splice(index, 1);
-        saveState();
+        try {
+            const res = await fetch(`${API_URL}/sessions/sale`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: state.session._id, saleIndex: index, update: { type: 'delete' } })
+            });
+            state.session = await res.json();
+            renderHistory();
+            updateUI();
+        } catch (err) {
+            alert('Error al eliminar: ' + err.message);
+        }
+    }
+}
+
+window.toggleMethod = async function(index) {
+    try {
+        const res = await fetch(`${API_URL}/sessions/sale`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: state.session._id, saleIndex: index, update: { type: 'toggleMethod' } })
+        });
+        state.session = await res.json();
         renderHistory();
         updateUI();
+    } catch (err) {
+        alert('Error al cambiar método: ' + err.message);
     }
 }
 
-window.toggleMethod = function(index) {
-    const sale = state.sales[index];
-    sale.method = sale.method === 'Efectivo' ? 'Transferencia' : 'Efectivo';
-    saveState();
-    renderHistory();
-    updateUI();
-}
-
-function handleReset() {
-    if (confirm("¿Estás seguro de que deseas reiniciar TODO? Se perderán todas las ventas y la configuración.")) {
-        state = {
-            config: { start: 0, end: 0, price: 0, seller: '' },
-            currentNum: 0,
-            sales: [],
-            isActive: false
-        };
-        localStorage.removeItem('fc_andar_state_v2');
-        updateUI();
+async function handleFinishDay() {
+    if (!state.session) return;
+    
+    const count = state.session.sales.length;
+    if (confirm(`¿Estás seguro de terminar el día? Se han registrado ${count} ventas. Esta acción archivará la sesión actual.`)) {
+        try {
+            await fetch(`${API_URL}/sessions/finish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: state.session._id })
+            });
+            state.session = null;
+            showScreen(configScreen);
+        } catch (err) {
+            alert('Error al terminar día: ' + err.message);
+        }
     }
 }
 
-// Export Functions
+async function viewPastSessions() {
+    showScreen(daysScreen);
+    sessionsList.innerHTML = '<p class="text-center">Cargando historial...</p>';
+    const emptyMsg = document.getElementById('empty-sessions');
+    
+    try {
+        const res = await fetch(`${API_URL}/sessions/history`);
+        const history = await res.json();
+        
+        sessionsList.innerHTML = '';
+        if (history.length === 0) {
+            emptyMsg.classList.remove('hidden');
+        } else {
+            emptyMsg.classList.add('hidden');
+            history.forEach(session => {
+                const dateStr = new Date(session.completedAt).toLocaleDateString();
+                const total = session.sales.reduce((sum, s) => sum + s.amount, 0);
+                const cash = session.sales.filter(s => s.method === 'Efectivo').reduce((sum, s) => sum + s.amount, 0);
+                const trans = session.sales.filter(s => s.method === 'Transferencia').reduce((sum, s) => sum + s.amount, 0);
+                
+                const card = document.createElement('div');
+                card.className = 'session-card';
+                card.innerHTML = `
+                    <div class="session-header">
+                        <div>
+                            <span class="session-seller">${session.sellerName}</span>
+                            <span class="session-date">${dateStr}</span>
+                        </div>
+                        <div class="session-actions">
+                            <button class="session-download-btn" onclick="exportHistoricalSession('${session._id}')" title="Descargar Reporte">
+                                <ion-icon name="download-outline"></ion-icon>
+                            </button>
+                            <button class="session-delete-btn" onclick="deleteHistoricalSession('${session._id}')" title="Borrar Día">
+                                <ion-icon name="trash-outline"></ion-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="session-stats">
+                        <div class="session-stat">
+                            <span class="label">Entradas</span>
+                            <span class="value">${session.sales.length}</span>
+                        </div>
+                        <div class="session-stat">
+                            <span class="label">Efectivo</span>
+                            <span class="value">$${cash.toLocaleString()}</span>
+                        </div>
+                        <div class="session-stat">
+                            <span class="label">Transfer</span>
+                            <span class="value">$${trans.toLocaleString()}</span>
+                        </div>
+                        <div class="session-stat">
+                            <span class="label">Total</span>
+                            <span class="value" style="color: var(--primary)">$${total.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+                sessionsList.appendChild(card);
+            });
+        }
+    } catch (err) {
+        sessionsList.innerHTML = `<p class="text-center" style="color: var(--danger)">Error al cargar historial: ${err.message}</p>`;
+    }
+}
+
+window.deleteHistoricalSession = async function(id) {
+    if (confirm("¿Estás seguro de eliminar este día del historial permanentemente?")) {
+        try {
+            await fetch(`${API_URL}/sessions/${id}`, { method: 'DELETE' });
+            viewPastSessions(); // Refresh list
+        } catch (err) {
+            alert('Error al eliminar sesión: ' + err.message);
+        }
+    }
+}
+
+// Historical Export
+window.exportHistoricalSession = async function(id) {
+    try {
+        const res = await fetch(`${API_URL}/sessions/history`);
+        const history = await res.json();
+        const session = history.find(s => s._id === id);
+        if (session) {
+            // Use same export logic as active session but with provided data
+            runExport(session, 'PDF');
+        }
+    } catch (err) {
+        alert('Error al exportar: ' + err.message);
+    }
+}
+
+// Original Export Functions (Adapted)
 function exportToExcel() {
-    if (state.sales.length === 0) {
+    if (!state.session || state.session.sales.length === 0) {
         alert("No hay ventas para exportar.");
         return;
     }
-
-    const cashTotal = state.sales.filter(s => s.method === 'Efectivo').reduce((sum, s) => sum + s.amount, 0);
-    const transferTotal = state.sales.filter(s => s.method === 'Transferencia').reduce((sum, s) => sum + s.amount, 0);
-    const grandTotal = cashTotal + transferTotal;
-
-    const data = state.sales.map(s => ({
-        "Número": s.number,
-        "Monto": s.amount,
-        "Método": s.method,
-        "Hora": s.timestamp
-    }));
-
-    // Add summary rows
-    data.push({});
-    data.push({ "Número": "RESUMEN" });
-    data.push({ "Número": "Vendedor", "Monto": state.config.seller });
-    data.push({ "Número": "Total Efectivo", "Monto": cashTotal });
-    data.push({ "Número": "Total Transferencia", "Monto": transferTotal });
-    data.push({ "Número": "TOTAL GENERAL", "Monto": grandTotal });
-
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Ventas");
-    
-    XLSX.writeFile(workbook, `Ventas_${state.config.seller}_${new Date().toLocaleDateString()}.xlsx`);
+    runExport(state.session, 'Excel');
     exportModal.classList.add('hidden');
 }
 
 function exportToPDF() {
-    if (state.sales.length === 0) {
+    if (!state.session || state.session.sales.length === 0) {
         alert("No hay ventas para exportar.");
         return;
     }
+    runExport(state.session, 'PDF');
+    exportModal.classList.add('hidden');
+}
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const cashTotal = state.sales.filter(s => s.method === 'Efectivo').reduce((sum, s) => sum + s.amount, 0);
-    const transferTotal = state.sales.filter(s => s.method === 'Transferencia').reduce((sum, s) => sum + s.amount, 0);
+function runExport(sessionData, type) {
+    const cashTotal = sessionData.sales.filter(s => s.method === 'Efectivo').reduce((sum, s) => sum + s.amount, 0);
+    const transferTotal = sessionData.sales.filter(s => s.method === 'Transferencia').reduce((sum, s) => sum + s.amount, 0);
     const grandTotal = cashTotal + transferTotal;
 
-    doc.setFontSize(22);
-    doc.text("FC ANDAR - Reporte de Entradas", 14, 20);
-    
-    doc.setFontSize(11);
-    doc.text(`Vendedor: ${state.config.seller}`, 14, 30);
-    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 35);
-    doc.text(`Rango: ${state.config.start} - ${state.config.end}`, 14, 40);
+    if (type === 'Excel') {
+        const data = sessionData.sales.map(s => ({
+            "Número": s.number,
+            "Monto": s.amount,
+            "Método": s.method,
+            "Hora": s.timestamp
+        }));
 
-    const rows = state.sales.map(s => [s.number, `$${s.amount}`, s.method, s.timestamp]);
-    
-    doc.autoTable({
-        head: [['N°', 'Monto', 'Método', 'Hora']],
-        body: rows,
-        startY: 50,
-        headStyles: { fillColor: [15, 23, 42] }
-    });
+        data.push({});
+        data.push({ "Número": "RESUMEN" });
+        data.push({ "Número": "Vendedor", "Monto": sessionData.sellerName });
+        data.push({ "Número": "Total Efectivo", "Monto": cashTotal });
+        data.push({ "Número": "Total Transferencia", "Monto": transferTotal });
+        data.push({ "Número": "TOTAL GENERAL", "Monto": grandTotal });
 
-    const finalY = doc.lastAutoTable.finalY + 15;
-    doc.setFontSize(14);
-    doc.text("Resumen de Totales", 14, finalY);
-    doc.setFontSize(11);
-    doc.text(`Total Efectivo: $${cashTotal.toLocaleString()}`, 14, finalY + 10);
-    doc.text(`Total Transferencia: $${transferTotal.toLocaleString()}`, 14, finalY + 17);
-    
-    doc.setFontSize(14);
-    doc.setTextColor(239, 68, 68);
-    doc.text(`TOTAL FINAL: $${grandTotal.toLocaleString()}`, 14, finalY + 27);
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Ventas");
+        XLSX.writeFile(workbook, `Ventas_${sessionData.sellerName}_${new Date().toLocaleDateString()}.xlsx`);
+    } else {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
 
-    doc.save(`Ventas_${state.config.seller}.pdf`);
-    exportModal.classList.add('hidden');
+        doc.setFontSize(22);
+        doc.text("FC ANDAR - Reporte de Entradas", 14, 20);
+        
+        doc.setFontSize(11);
+        doc.text(`Vendedor: ${sessionData.sellerName}`, 14, 30);
+        doc.text(`Fecha: ${new Date(sessionData.createdAt).toLocaleDateString()}`, 14, 35);
+        doc.text(`Rango: ${sessionData.startNum} - ${sessionData.endNum}`, 14, 40);
+
+        const rows = sessionData.sales.map(s => [s.number, `$${s.amount}`, s.method, s.timestamp]);
+        
+        doc.autoTable({
+            head: [['N°', 'Monto', 'Método', 'Hora']],
+            body: rows,
+            startY: 50,
+            headStyles: { fillColor: [15, 23, 42] }
+        });
+
+        const finalY = doc.lastAutoTable.finalY + 15;
+        doc.setFontSize(14);
+        doc.text("Resumen de Totales", 14, finalY);
+        doc.setFontSize(11);
+        doc.text(`Total Efectivo: $${cashTotal.toLocaleString()}`, 14, finalY + 10);
+        doc.text(`Total Transferencia: $${transferTotal.toLocaleString()}`, 14, finalY + 17);
+        
+        doc.setFontSize(14);
+        doc.setTextColor(239, 68, 68);
+        doc.text(`TOTAL FINAL: $${grandTotal.toLocaleString()}`, 14, finalY + 27);
+
+        doc.save(`Ventas_${sessionData.sellerName}.pdf`);
+    }
 }

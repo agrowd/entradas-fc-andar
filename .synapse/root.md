@@ -12,3 +12,8 @@
 - `style.css`: Premium aesthetics and dark mode.
 - `app.js`: Application logic (counting, storage, exports).
 - `.synapse/`: Ariadne Engine memory files.
+## ??? Architecture (v2.0.0)
+- **Frontend:** HTML5, CSS3, Vanilla JS (Mobile-First).
+- **Backend:** Node.js + Express.
+- **Database:** MongoDB Atlas.
+- **API:** RESTful endpoints for session and sale management.
