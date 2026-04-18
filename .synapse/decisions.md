@@ -7,4 +7,4 @@
 | D-05 | **Arquitectura Full-Stack** | Se añade un backend Node/Express para MongoDB Atlas. | 🔒 LOCKED |
 | D-06 | **MongoDB Atlas** | Almacenamiento persistente en la nube. | 🔒 LOCKED |
 | D-07 | **Vercel Readiness** | Prep para despliegue serverless con vercel.json. | 🔒 LOCKED |
-| D-08 | **Reorganización /public** | Estructura para compatibilidad estándar con Vercel. | 🔒 LOCKED |
+| D-09 | Arquitectura Zero-Config | Se movio el motor a /api para estabilidad total en Vercel. | ?? LOCKED |
