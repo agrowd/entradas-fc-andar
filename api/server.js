@@ -15,9 +15,18 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
+if (!process.env.MONGODB_URI) {
+    console.error('❌ MONGODB_URI no está definida en las variables de entorno');
+} else {
+    mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000 // Error rápido si no conecta
+    })
     .then(() => console.log('✅ Conectado a MongoDB Atlas'))
     .catch(err => console.error('❌ Error de conexión a MongoDB:', err));
+}
+
+// Global Mongoose Config
+mongoose.set('bufferCommands', false); // Deshabilitar buffering para fallar rápido
 
 // Models
 const SessionSchema = new mongoose.Schema({
